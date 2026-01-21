@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<link rel="icon" href="https://i.ibb.co/FCd6Lfx/ico.jpg" type="image/x-icon">
+<meta charset="UTF-8">
+<title>Taskbar | ComplexoGG</title>
+<style>
+body {
+    background-color: #111;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    color: #ddd;
+}
+.header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.logo-preview {
+    max-width: 320px;
+    max-height: 120px;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 255, 170, 0.4);
+    display: none;
+}
+.logo-input-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.logo-input-container input[type="text"] {
+    width: 280px;
+    padding: 10px;
+    font-size: 16px;
+    background: #1a1a1a;
+    color: #eee;
+    border: 1px solid #444;
+    border-radius: 6px;
+    outline: none;
+}
+.logo-input-container button {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+    background: #00ffaa;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.logo-input-container button:hover {
+    background: #00cc88;
+}
+.taskbar {
+    width: 620px;
+    height: 110px;
+    background: linear-gradient(90deg, #181818, #242424, #181818);
+    border: 2px solid #555;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 30px rgba(0,0,0,0.8);
+}
+.zone {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 130px;
+    height: 100%;
+    transform: translateX(-50%);
+    border-left: 3px dashed #888;
+    border-right: 3px dashed #888;
+    pointer-events: none;
+}
+.letter {
+    position: absolute;
+    top: 50%;
+    left: 110%;
+    transform: translateY(-50%);
+    font-size: 58px;
+    font-weight: bold;
+    color: #f8f8f8;
+    white-space: nowrap;
+    transition: 
+        left 1.8s linear,
+        filter 0.7s ease-in-out,
+        color 0.35s,
+        transform 0.4s;
+    filter: blur(7px);
+    text-shadow: 0 0 14px currentColor;
+}
+.letter.in-zone {
+    filter: blur(0) !important;
+}
+.success,
+.fail {
+    transition: all 0.4s ease-out;
+    transform: translateY(-50%) scale(1.4);
+    filter: blur(0) !important;
+}
+.success  { color: #00ffaa !important; text-shadow: 0 0 35px #00ffaa; }
+.fail     { color: #ff4d4d !important; text-shadow: 0 0 30px #ff4d4d; transform: translateY(-50%) scale(0.8) !important; }
+
+.info, .game-over {
+    margin-top: 28px;
+    text-align: center;
+    color: #ddd;
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+}
+.game-over {
+    color: #ff4d4d;
+    font-size: 32px;
+    margin: 20px 0;
+}
+.restart-btn {
+    padding: 12px 30px;
+    font-size: 20px;
+    background: #00ffaa;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 15px;
+    box-shadow: 0 0 15px rgba(0,255,170,0.6);
+}
+.restart-btn:hover {
+    background: #00cc88;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo-input-container">
+<img src="https://i.ibb.co/C37ywmbK/complexo.png" alt="logo" style="width:300px; height:auto; border-radius:6px;margin-top: -150px">    </div>
+</div>
+
+<div>
+    <div class="taskbar" id="taskbar">
+        <div class="zone"></div>
+    </div>
+    <div class="info" id="info">Acertos: 0 / 10</div>
+    <div id="gameOver" class="game-over" style="display:none;"></div>
+    <center><button id="restartBtn" class="restart-btn" style="display:none;" onclick="restartGame()">Reiniciar</button></center>
+</div>
+<script>
+const letters = ['W', 'A', 'S', 'D', 'Z', 'X'];
+const taskbar = document.getElementById('taskbar');
+const info = document.getElementById('info');
+const gameOverEl = document.getElementById('gameOver');
+const restartBtn = document.getElementById('restartBtn');
+
+let currentLetter = '';
+let currentElement = null;
+let hits = 0;
+let canHit = false;
+let gameActive = true;
+let baseDuration = 1800;
+let currentDuration = baseDuration;
+
+function getRandomLetter() {
+    return letters[Math.floor(Math.random() * letters.length)];
+}
+
+function updateInfo() {
+    info.textContent = `Acertos: ${hits} / 10`;
+}
+
+function showGameOver(message) {
+    gameActive = false;
+    gameOverEl.textContent = message;
+    gameOverEl.style.display = 'block';
+    restartBtn.style.display = 'block';
+    info.style.display = 'none';
+}
+
+function restartGame() {
+    taskbar.innerHTML = '<div class="zone"></div>';
+    hits = 0;
+    currentDuration = baseDuration;
+    gameActive = true;
+    canHit = false;
+    currentElement = null;
+    currentLetter = '';
+    gameOverEl.style.display = 'none';
+    restartBtn.style.display = 'none';
+    info.style.display = 'block';
+    updateInfo();
+    spawnLetter();
+}
+
+function spawnLetter() {
+    if (!gameActive) return;
+
+    canHit = false;
+    currentLetter = getRandomLetter();
+
+    const el = document.createElement('div');
+    el.classList.add('letter');
+    el.textContent = currentLetter;
+    taskbar.appendChild(el);
+    currentElement = el;
+
+    el.offsetLeft;
+
+    el.style.transition = `left ${currentDuration}ms linear, filter 0.7s ease-in-out`;
+    el.style.left = '-80px';
+
+    const zoneStartMs = currentDuration * 0.35;
+    const zoneEndMs   = currentDuration * 0.65;
+
+    setTimeout(() => {
+        if (gameActive && currentElement === el) {
+            el.classList.add('in-zone');
+            canHit = true;
+        }
+    }, zoneStartMs);
+
+    setTimeout(() => {
+        if (gameActive && currentElement === el) {
+            el.classList.remove('in-zone');
+        }
+    }, zoneEndMs);
+
+    setTimeout(() => {
+        if (el.parentNode && currentElement === el) {
+            if (canHit) {
+                el.classList.add('fail');
+                hits = Math.max(0, hits - 1);
+                updateInfo();
+
+                if (hits === 0) {
+                    showGameOver("Você perdeu!");
+                }
+            }
+            setTimeout(() => {
+                if (el.parentNode) el.remove();
+                currentElement = null;
+                if (gameActive) spawnLetter();
+            }, 600);
+        }
+    }, currentDuration + 250);
+}
+
+function handleInput(success) {
+    if (!currentElement || !canHit) return;
+    canHit = false;
+
+    const el = currentElement;
+
+    if (success) {
+        el.classList.add('success');
+        hits++;
+        currentDuration = Math.max(1200, currentDuration - 160);
+    } else {
+        el.classList.add('fail');
+        hits = Math.max(0, hits - 1);
+        if (hits === 0) {
+            showGameOver("Você perdeu!");
+        }
+    }
+
+    updateInfo();
+
+    setTimeout(() => {
+        if (el.parentNode) {
+            el.remove();
+            currentElement = null;
+        }
+        if (success && gameActive) {
+            spawnLetter();
+        }
+    }, success ? 450 : 800);
+
+    if (hits >= 10) {
+        gameActive = false;
+        info.textContent = 'Treino concluído! 🎯';
+    }
+}
+
+document.addEventListener('keydown', e => {
+    if (!gameActive || !canHit) return;
+    const key = e.key.toUpperCase();
+    if (!letters.includes(key)) return;
+    handleInput(key === currentLetter);
+});
+
+function loadLogo() {
+    const urlInput = document.getElementById('logoUrl').value.trim();
+    const preview = document.getElementById('logoPreview');
+    
+    if (urlInput) {
+        preview.src = urlInput;
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+spawnLetter();
+
+setInterval(() => {
+    if (gameActive && !currentElement) spawnLetter();
+}, 200);
+</script>
+</body>
+</html>
